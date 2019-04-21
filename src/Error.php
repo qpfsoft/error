@@ -178,7 +178,7 @@ class Error
     public static function appError($type, $message, $file, $line)
     {
         if (error_reporting() & $type) {
-            throw new ErrorException($type, $message, $file, $line);
+            throw new ErrorException($message, $type, $file, $line);
         }
     }
     

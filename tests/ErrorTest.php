@@ -32,4 +32,4 @@ class ErrorTest
 }
 
 $test = new ErrorTest();
-$test->base1();
+$test->base3();
