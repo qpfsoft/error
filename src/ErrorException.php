@@ -10,8 +10,10 @@ namespace qpf\error;
 
 /**
  * 错误异常
+ * 
+ * 该异常会被异常处理程序作为PHP错误信息对象
  */
-class ErrorException extends \Exception
+class ErrorException extends \ErrorException
 {
     
     /**
@@ -22,17 +24,14 @@ class ErrorException extends \Exception
      * @param string $line 出错行号
      * @param \Exception $previous 前一个异常
      */
-    public function __construct($message = '', $code = 0, $file = __FILE__, $line = __LINE__, \Exception $previous = null)
+    public function __construct($message = '', $code = 0, $severity = 1, $file = __FILE__, $line = __LINE__, \Exception $previous = null)
     {
-        parent::__construct($message, $code, $previous);
-        $this->code = $code;
-        $this->file = $file;
-        $this->line = $line;
+        parent::__construct($message, $code, $severity, $file, $line, $previous);
     }
     
     /**
      * 判断错误类型是否致命错误
-     * @param int $type
+     * @param int $type 错位类型, error_get_last()['type']
      * @return bool
      */
     public static function isFatal($type)

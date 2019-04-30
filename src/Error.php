@@ -189,7 +189,7 @@ class Error
     {
         $error = error_get_last();
         if(ErrorException::isFatal($error['type'])) {
-            $e = new ErrorException($error['type'], $error['message'], $error['file'], $error['line']);
+            $e = new ErrorException($error['message'], $error['type'], $error['file'], $error['line']);
             self::appException($e);
         }
     }

@@ -104,25 +104,55 @@ if (! function_exists('html_encode')) {
         return htmlspecialchars($string, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8', $doubleEncode);
     }
 }
-ini_set("highlight.comment", "#008000"); // 注释
-ini_set("highlight.default", "#000000"); // 默认文本
-ini_set("highlight.html", "#808080"); // html部分
-ini_set("highlight.keyword", "#000088; font-weight: 400"); // 关键字
-ini_set("highlight.string", "#DD0000"); // 字符串
-if(!function_exists('highlightText'))
-{
-    function highlightText($text)
+
+if(!function_exists('highlight_row')) {
+    /**
+     * 高亮解析一行PHP代码
+     * @param string $text
+     * @return mixed
+     */
+    function highlight_row($code)
     {
-        $text = highlight_string("<?php " . $text, true);
-        $text = trim($text);
-        $text = preg_replace("|^\\<code\\>\\<span style\\=\"color\\: #[a-fA-F0-9]{0,6}\"\\>|", "", $text, 1);  // 删除前缀
-        $text = preg_replace("|\\</code\\>\$|", "", $text, 1);  // 删除后缀 1
-        $text = trim($text);  // 删除换行符
-        $text = preg_replace("|\\</span\\>\$|", "", $text, 1);  // 删除后缀 2
-        $text = trim($text);  // 删除换行符
-        $text = preg_replace("|^(\\<span style\\=\"color\\: #[a-fA-F0-9]{0,6}\"\\>)(&lt;\\?php&nbsp;)(.*?)(\\</span\\>)|", "\$1\$3\$4", $text);  // 删除自定义添加 "<?php "
+        // 转义\t 即4个空格
+        $escape_tabs = function ($str) {
+            return str_replace('    ', '&nbsp;&nbsp;&nbsp;&nbsp;', $str);
+        };
         
-        return $text;
+        // 匹配多行注解行
+        if (strpos(trim($code, ' '), '*')  !== false) {
+            return '<span style="color: #3F55BF; ">' . $escape_tabs($code) . '</span>';
+        }
+        
+        // 完整匹配 - 单行注解
+        if (strpos(trim($code, ' '), '//') === 0) {
+            return '<span style="color: #3F55BF; ">' . $escape_tabs($code) . '</span>';
+        }
+        
+        // 匹配单双引号值
+        $code = preg_replace(
+            '/["|\'](.*?)["|\']/U',
+            '"<span style="color: #0000C0">$1</span>"', $code
+            );
+        
+        // 匹配单行注解
+        $code = preg_replace(
+            '/(\/\/)(.+)\s/',
+            '<span style="color: #557F5F; "> $0 </span>',
+            $code
+            );
+        
+        // 特殊关键字 - 红色
+        $code = preg_replace(
+            '/\b(print|echo|new|function|null|static|self|true|false|if|else|throw|return)\b/',
+            '<span style="color: #7F0055;font-weight: 900">$1</span>', $code
+            );
+        // 特殊关键字 - 绿色
+        $code = preg_replace(
+            '/\b(public)\b/',
+            '<span style="color: #22804C;font-weight: 900">$1</span>', $code
+            );
+        // 将四个连续空格转换为4个转义符
+        return $escape_tabs($code);
     }
 }
 ?>
@@ -275,7 +305,7 @@ table td {
 		        $html .=  ($key == ($line - 1 > 0 ? $line - 1 : $line) ? ' line-error' : '');
 		        $html .= '"';
 		        $html .= '>';
-		        $html .= '<span class="line-code">' . ++$key . '</span>' . highlightText($val) . '</p>';
+		        $html .= '<span class="line-code">' . ++$key . '</span>' . highlight_row($val) . '</p>';
 		    }
 		    $html .= '</div>';
 		    

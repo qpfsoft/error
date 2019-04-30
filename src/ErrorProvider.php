@@ -8,32 +8,26 @@
 // ╰───────────────────────────────────────────────────────────┘
 namespace qpf\error;
 
+use qpf\base\ServiceProvider;
+use qpf\base\Application;
+
 /**
  * 错误处理程序供应商
  */
-class ErrorProvider
+class ErrorProvider extends ServiceProvider
 {
-    /**
-     * 延迟加载
-     * @var bool
-     */
-    public $lazy = false;
-    
-    /**
-     * 引导
-     */
-    public function boot()
-    {
-        
-    }
-    
+
     /**
      * 注册服务
      */
     public function register()
     {
-        \QPF::$app->service('error', [
-            'class' => '\qpf\error\Error'
-        ]);
+        // 延迟加载
+        $this->app->single('error', function (Application $app, $params, $option) {
+            $error = new Error();
+            $error->setDebug($this->app->isDebug());
+            
+            return $error;
+        });
     }
 }
