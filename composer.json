@@ -1,6 +1,6 @@
 {
-    "name": "qpfsoft/qpf-error",
-    "description": "QPF Error Handler",
+    "name": "qpfsoft/error",
+    "description": "Error Handler",
     "type": "library",
     "license": "Apache-2.0",
     "authors": [
