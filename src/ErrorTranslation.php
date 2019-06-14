@@ -283,6 +283,7 @@ class ErrorTranslation
                 'no'            => '没有',
                 'non'           => '非',
                 'name'          => '名称',
+                'notice'        => '通知',
             ],
             'o' => [
                 'of'            => '的',

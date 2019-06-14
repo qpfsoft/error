@@ -24,7 +24,7 @@ class Handle
      * @var array
      */
     protected $filterException = [
-        '\\qpf\\error\\HttpExcetion'
+        'qpf\\error\\HttpException',
     ];
     
     /**
@@ -32,9 +32,14 @@ class Handle
      * @var array
      */
     protected $option = [
-        'showError' => true,
-        'message'   => 'Page Error!',
+        'showError' => false, // 显示错误
+        'message'   => 'Page Error!', // 不显示错误时, 替代的文本
         'tpl'       => __DIR__ .'/tpl/error_handler.php',
+        
+        // http异常模板
+        'http_tpl'  => [
+            '404'   => __DIR__ . '/tpl/404.html',
+        ],
     ];
     
     /**
@@ -114,24 +119,38 @@ class Handle
     {
         if (method_exists($e, 'getName')) {
             $name = $e->getName();
-            if (Error::isDebug() == 1 && ($pos = strpos($name, '('))) {
+            if (Error::isDebug1() && ($pos = strpos($name, '('))) {
                 $name = substr($name, $pos + 1, -1);
             }
-            return $name;
+
+            // TODO 翻译标题
+            return Error::isDebug2() ? $this->translate($name) : $name;
         }
         
         $name = get_class($e);
-        
-        // 优化异常名称显示
-        if(Error::isDebug() == 2) {
-            $name = strtolower(preg_replace(['/([a-z\d])([A-Z])/', '/([^_])([A-Z][a-z])/'], '$1_$2', $name));
 
-            return ErrorTranslation::translate(strtr($name, '_', ' '));
+        // 优化异常名称显示
+        if(Error::isDebug2()) {
+            $name = strtolower(preg_replace(['/([a-z\d])([A-Z])/', '/([^_])([A-Z][a-z])/'], '$1_$2', $name));
+            
+            // TODO 翻译标题
+            return $this->translate(strtr($name, '_', ' '));
         }
         
         return $name;
     }
     
+    /**
+     * 翻译错误信息
+     * @param string $message 信息
+     * @param string $lang 目标语言
+     * @return string
+     */
+    protected function translate($message, $lang = 'zh-cn')
+    {
+        return PhpTranslator::translate($message,  $lang);
+    }
+
     /**
      * 解析带跟踪的消息
      * @param $string $message
@@ -216,8 +235,9 @@ class Handle
             return $message;
         }
 
-        if (Error::isDebug() == 2) {
-            $message = ErrorTranslation::translate($message);
+        if (Error::isDebug2()) {
+            // TODO 翻译消息
+            $message = $this->translate($message);
         }
         
         return $message;
@@ -274,8 +294,26 @@ class Handle
      */
     public function renderException(\Throwable $e)
     {
-        return $this->render($e);
+        if ($e instanceof HttpException) {
+            http_response_code($e->getStatusCode());
+            if (isset($this->option['http_tpl'][$e->statusCode])) {
+                $file = $this->option['http_tpl'][$e->statusCode];
+            }
+            
+            // http 默认视图
+            $file = is_file($file) ? $file : __DIR__ . '/tpl/http.php';
+            echo $this->viewFile($file, [
+                'code' => $e->getStatusCode(), 
+                'name' => $e->getName(),
+                'message'   => $e->getMessage(),
+                'home' => '//'. $_SERVER['HTTP_HOST'], // TODO 返回首页URL
+            ]);
+        } else {
+            $this->render($e);
+        }
     }
+    
+    
     
     /**
      * 记录日志
@@ -304,7 +342,6 @@ class Handle
     /**
      * 渲染引擎
      * @param \Throwable $e
-     * @return Response
      */
     protected function render(\Throwable $e)
     {
@@ -330,8 +367,9 @@ class Handle
         } else {
             $context['code'] = $this->getCode($e);
             $context['message'] = $this->getMessage($e);
-            
-            if (!Error::isDebug()) {
+
+            // 不显示真实错误
+            if (!$this->option['showError']) {
                 $context['message'] = $this->option['message'];
             }
         }

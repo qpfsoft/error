@@ -38,15 +38,46 @@ if(!function_exists('parse_tarce_args')) {
      */
     function parse_tarce_args($args)
     {
-        $str = '';
+        $params = [];
+        
+        // 转换对象参数
+        $parseObject = function ($object)
+        {
+            return '<span class="params-view" title="'. get_class($object) .'">Object $object</span>';
+        };
+        // 转换数组参数
+        $parseArray = function (array $array)
+        {
+            return '<span class="params-view" title="' . var_export($array, true) . '">[...]</span>';
+        };
+        // 转换文件信息
+        $parseFile = function ($file)
+        {
+            return '<span class="params-view" title="' . parse_file($file, true) . '">' . parse_file($file, false) . '</span>'; 
+        };
+
         foreach ($args as $val) {
-            if (is_object($args)) {
-                $str .= '对象';
-            } elseif (is_string($val) && ! empty($val)) {
-                $str .= "'$val' ";
+            if (is_object($val)) {
+                $params[] = $parseObject($val);
+            } elseif (is_array($val)){
+                $temp = [];
+                foreach ($val as $v) {
+                    if (is_array($v)) {
+                        $temp[] =  var_export($v, true);
+                    } elseif (is_object($v)) {
+                        $temp[] =  html_encode('Object(\''. get_class($v) . '\'){}');
+                    } else {
+                        $temp[] = var_export($v, true);
+                    }
+                }
+                $params[] = $parseArray($temp);
+            } elseif (is_file($val)) {
+                $params[] = $parseFile($val);
+            } else {
+                $params[] = var_export($val, true);
             }
         }
-        return $str;
+        return join(', ', $params);
     }
 }
 if(!function_exists('parse_tarce_line')) {
@@ -79,17 +110,18 @@ if(!function_exists('parse_file')) {
             $file = str_replace('\\', '/', $file);
         }
         
-        // 去除根路径
         if ($type) {
-            $file = str_replace(rtrim(dirname($_SERVER['DOCUMENT_ROOT']), '/'), '@root', $file);
-            // 获得文件名
+            // 去除根路径
+            $file = str_replace(rtrim($_SERVER['DOCUMENT_ROOT'], '/') . '/', '@root/', $file);
         } else {
+            // 获得文件名
             $file = './'. basename($file);
         }
         
         return $file;
     }
 }
+
 if (! function_exists('html_encode')) {
     
     /**
@@ -155,6 +187,7 @@ if(!function_exists('highlight_row')) {
         return $escape_tabs($code);
     }
 }
+header('X-Powered-By: Error');
 ?>
 <!DOCTYPE html>
 <html>
@@ -164,13 +197,10 @@ if(!function_exists('highlight_row')) {
 		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
 		<meta name="robots" content="noindex,nofollow" />
-		<title>
-		<?php
-		  $isDebug = Error::isDebug();
+		<title><?php
 		  $pageTitle = ['Not found', 'System error', '系统发生错误'];
-		  echo $pageTitle[$isDebug];
-		?>
-		</title>
+		  echo isset($pageTitle[Error::isDebug()]) ? $pageTitle[Error::isDebug()] : 'unknown';
+		?></title>
 		<link href="/favicon.ico" type="image/x-icon" rel="icon">
 		<link href="/favicon.ico" type="image/x-icon" rel="shortcut icon">
 		<!-- /static/qpf-ui/qpf-ui.css -->
@@ -269,6 +299,12 @@ table td {
 .plate ol li {
 	padding-bottom: 5px;
 }
+/* 参数查看样式 */
+.params-view {
+	color:#1AA034;
+	font-weight:500;
+	cursor:help;
+}
 </style>
 <body>
 	<div class="g-box-full">
@@ -305,7 +341,7 @@ table td {
 		        $html .=  ($key == ($line - 1 > 0 ? $line - 1 : $line) ? ' line-error' : '');
 		        $html .= '"';
 		        $html .= '>';
-		        $html .= '<span class="line-code">' . ++$key . '</span>' . highlight_row($val) . '</p>';
+		        $html .= '<span class="line-code">' . ++$key . '</span>' . highlight_row(html_encode($val)) . '</p>';
 		    }
 		    $html .= '</div>';
 		    
@@ -319,9 +355,10 @@ table td {
 		         $html = '<div class="plate mb-3">';
 		         $html .= '<div class="title txt-info mb-2">Call Stack</div>';
 		         // 循环生成回溯
-		         $html .= '<ol>';
-		         //$trace = array_reverse($trace); // 执行顺序
+		         $html .= '<ol style="font-family: verdana;">';
+		         $trace = array_reverse($trace); // 执行顺序
 		         foreach ($trace as $tarce_line) {
+		             
 		             $html .= '<li class="txt-br"><span class="txt-me">' . parse_tarce($tarce_line) . '</span> <span class="txt-hei">in</span> <span class="txt-hui">' . parse_file(isset($tarce_line['file']) ? $tarce_line['file'] : '', Error::isDebug()) . ':' . parse_tarce_line(isset($tarce_line['line']) ? $tarce_line['line'] : '') . '</span>';
 		         }
 		         $html .= '</ol>';
@@ -331,7 +368,7 @@ table td {
 		?>
 
 		<?php 
-		  if(Error::isDebug() == 2) { 
+		  if(Error::isDebug2()) { 
 		 ?>
 		<p class="txt-zh" style="letter-spacing: .1rem">
 			处理您的请求发生上述Web服务器错误. <br>

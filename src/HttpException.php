@@ -37,6 +37,11 @@ class HttpException extends \RuntimeException
     {
         $this->statusCode = $status;
         $this->headers = $headers;
+        
+        if ($message === null) {
+            $message = isset(self::$httpStatus[$this->statusCode]) ? self::$httpStatus[$this->statusCode] : null;
+        }
+        
         parent::__construct($message, $code, $previous);
     }
     
@@ -70,7 +75,7 @@ class HttpException extends \RuntimeException
             return 'Error';
         }
     }
-    
+
     /**
      * HTTP状态码和状态文本
      * @var array

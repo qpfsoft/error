@@ -19,12 +19,13 @@ class ErrorException extends \ErrorException
     /**
      * 构造函数
      * @param string $message 异常消息
-     * @param int $code 错误类型, 即异常代码
+     * @param int $code 错误码, 自定义
+     * @param int $severity PHP异常级别
      * @param string $file 出错文件
      * @param string $line 出错行号
      * @param \Exception $previous 前一个异常
      */
-    public function __construct($message = '', $code = 0, $severity = 1, $file = __FILE__, $line = __LINE__, \Exception $previous = null)
+    public function __construct($message = '', $code = 0, $severity = E_ERROR, $file = __FILE__, $line = __LINE__, \Exception $previous = null)
     {
         parent::__construct($message, $code, $severity, $file, $line, $previous);
     }
@@ -63,6 +64,6 @@ class ErrorException extends \ErrorException
             E_WARNING => 'PHP Warning'
         ];
 
-        return isset($names[$this->getCode()]) ? $names[$this->getCode()] : 'Error';
+        return isset($names[$this->getSeverity()]) ? $names[$this->getSeverity()] : 'Error';
     }
 }

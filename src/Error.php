@@ -35,14 +35,48 @@ class Error
      * @var object
      */
     protected static $log;
+    
+    /**
+     * 应用程序异常
+     * @var integer
+     */
+    const APP_EXCETPION = 0;
+    /**
+     * 应用程序错误
+     * @var integer
+     */
+    const APP_ERROR = 1;
+    /**
+     * 应用程序最后错误
+     * @var integer
+     */
+    const APP_ERROR_LAST = 2;
 
     /**
-     * 是否调试模式
+     * 是否启用调试模式
      * @return bool
      */
     public static function isDebug()
     {
         return self::$debug;
+    }
+    
+    /**
+     * 是否调试模式1
+     * @return boolean
+     */
+    public static function isDebug1()
+    {
+        return self::$debug === true || self::$debug == 1;
+    }
+    
+    /**
+     * 是否调试模式2
+     * @return boolean
+     */
+    public static function isDebug2()
+    {
+        return 2 === (int) self::$debug;
     }
     
     /**
@@ -147,7 +181,7 @@ class Error
                 if(PHP_SAPI === 'cli') {
                     echo $title . $msg . PHP_EOL;
                 } else {
-                    echo '<h1 style="color:red;">'.$title.'</h1>';
+                    echo '<h1 style="color:red;font-size: 2rem;">'.$title.'</h1>';
                     echo '<pre>' . htmlspecialchars($msg, ENT_QUOTES, 'UTF-8') . '</pre>';
                 }
             } else {
@@ -178,7 +212,7 @@ class Error
     public static function appError($type, $message, $file, $line)
     {
         if (error_reporting() & $type) {
-            throw new ErrorException($message, $type, $file, $line);
+            throw new ErrorException($message, self::APP_ERROR, $type, $file, $line);
         }
     }
     
@@ -189,7 +223,7 @@ class Error
     {
         $error = error_get_last();
         if(ErrorException::isFatal($error['type'])) {
-            $e = new ErrorException($error['message'], $error['type'], $error['file'], $error['line']);
+            $e = new ErrorException($error['message'], self::APP_ERROR_LAST,$error['type'], $error['file'], $error['line']);
             self::appException($e);
         }
     }
