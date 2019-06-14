@@ -6,3 +6,4 @@ composer.lock
 .project
 .settings
 .buildpath
+/src/QPF-Error.log
